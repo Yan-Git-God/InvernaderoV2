@@ -8,7 +8,7 @@
     <script src="../js/datos.js"></script>
     <script src="../js/sesion.js"></script>
     <script>exigirRol("admin")</script>
-
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.8/dist/cdn.min.js"></script>
 </head>
 <body>
 
@@ -21,12 +21,50 @@
         <a href="../index.html" onclick="cerrarSesion()">Cerrar sesión</a>
     </nav>
 
-    <section>
-        <h2>Resumen Global</h2>
-        <p>Usuarios registrados: 3</p>
-        <p>Cultivos totales: 5</p>
-        <p>Sensores totales: 3</p>
-    </section>
- 
+    <main x-data="inicioAdmin()">
+
+        <p>Hola, <span x-text="nombre"></span></p>
+
+        <section>
+            <h2>Resumen global</h2>
+            <p>Usuarios registrados: <span x-text="usuarios.length"></span></p>
+            <p>Invernaderos: <span x-text="usuarios.length"></span></p>
+            <p>Cultivos totales: <span x-text="totalCultivos"></span></p>
+            <p>Sensores totales: <span x-text="totalSensores"></span></p>
+            <p>Datos recolectados: <span x-text="totalLecturas"></span></p>
+        </section>
+
+    </main>
+
+    <script>
+        function inicioAdmin() {
+            return {
+                nombre: "",
+                usuarios: [],
+
+                init() {
+                    const actual = usuarioActual();
+                    if (!actual) {
+                        return;
+                    }
+                    this.nombre = actual.nombre;
+                    this.usuarios = cargarDatos().usuarios.filter((u) => u.rol === "usuario");
+                },
+
+                get totalCultivos() {
+                    return this.usuarios.reduce((total, u) => total + u.cultivos.length, 0);
+                },
+
+                get totalSensores() {
+                    return this.usuarios.reduce((total, u) => total + u.sensores.length, 0);
+                },
+
+                get totalLecturas() {
+                    return this.usuarios.reduce((total, u) => total + u.lecturas.length, 0);
+                }
+            };
+        }
+    </script>
+
 </body>
 </html>
