@@ -1,3 +1,4 @@
+/* Estilos generales */
 body {
     font-family: Arial, sans-serif;
     background-color: #f4f4f4;
@@ -14,6 +15,7 @@ h2 {
     color: #333;
 }
 
+/* Navegación */
 nav {
     margin-bottom: 20px;
 }
@@ -32,6 +34,7 @@ nav a:hover {
     background-color: #1b5e20;
 }
 
+/* Formularios */
 form {
     background-color: #fff;
     padding: 20px;
@@ -69,6 +72,7 @@ button:hover {
     background-color: #1b5e20;
 }
 
+/* Errores de validación */
 [x-cloak] {
     display: none !important;
 }
@@ -83,6 +87,7 @@ button:hover {
     border-color: #b71c1c;
 }
 
+/* Tablas */
 table {
     width: 100%;
     border-collapse: collapse;
@@ -101,6 +106,7 @@ th {
     color: #fff;
 }
 
+/* Secciones y listas */
 section {
     background-color: #fff;
     padding: 15px;
@@ -112,6 +118,7 @@ ul {
     padding-left: 20px;
 }
 
+/* Responsividad para celular */
 @media (max-width: 600px) {
     nav a {
         display: block;
@@ -124,6 +131,7 @@ ul {
     }
 }
 
+/* Tablas con ordenamiento y acciones */
 .tabla-scroll {
     overflow-x: auto;
 }
@@ -155,4 +163,29 @@ ul {
 
 .btn-peligro:hover {
     background-color: #7f0000;
+}
+
+/* Casillas de verificación */
+input[type="checkbox"] {
+    width: auto;
+    margin-top: 0;
+    margin-right: 8px;
+}
+
+/* Gráfico de sensores */
+.grafico {
+    position: relative;
+    height: 320px;
+    background-color: #fff;
+    padding: 15px;
+    border-radius: 6px;
+    margin-bottom: 20px;
+}
+
+/* Mensajes de confirmación */
+.exito {
+    color: #1b5e20;
+    background-color: #e8f5e9;
+    padding: 8px 12px;
+    border-radius: 4px;
 }
