@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<head> 
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invernadero - Agregar</title>
+    <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+    <h1>Agregar</h1>
+
+    <nav>
+        <a href="inicio.html">Inicio</a>
+        <a href="invernadero.html">Invernadero</a>
+        <a href="creacion.html">Agregar</a>
+        <a href="datos.html">Datos</a>
+        <a href="../index.html">Cerrar sesión</a>
+    </nav>
+
+    <form>
+
+        <h2>Agregar Cultivo</h2>
+        <label for="nombreCultivo">Nombre:</label>
+        <input type="text" id="nombreCultivo" required>
+
+        <label for="tipoCultivo">Tipo:</label>
+        <input type="text" id="tipoCultivo" required>
+
+        <label for="fechaCultivo">Fecha de cultivo:</label>
+        <input type="date" id="fechaCultivo" required>
+
+        <label for="estacional">¿Es estacional?</label>
+        <input type="checkbox" id="estacional">
+
+        <button type="submit">Guardar Cultivo</button>
+
+    </form>
+
+    <form>
+
+        <h2>Agregar Sensor</h2>
+        <label for="nombreSensor">Nombre:</label>
+        <input type="text" id="nombreSensor" required>
+
+        <label for="descripcionSensor">Descripción:</label>
+        <input type="text" id="descripcionSensor" required>
+
+        <label for="unidadSensor">Unidad:</label>
+        <input type="text" id="unidadSensor" required>
+
+        <button type="submit">Guardar Sensor</button>
+
+    </form>
+
+</body>
+</html>
