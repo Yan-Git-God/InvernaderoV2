@@ -42,5 +42,10 @@ si hay algun espacio que sobra sobre las lineas de texto, eso es porque se me ol
 en el commit y tuve que comentarlos uno por uno (Yan)
 
 
+Entrega 2:
+
+se creo otro repositorio porque en el anterior estaba la clave privada
+
+
 
 
