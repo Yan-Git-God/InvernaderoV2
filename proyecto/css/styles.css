@@ -5,7 +5,7 @@ body {
     margin: 0;
     padding: 20px;
 }
- 
+
 h1 {
     color: #2e7d32;
 }
@@ -13,7 +13,6 @@ h1 {
 h2 {
     color: #333;
 }
-
 
 nav {
     margin-bottom: 20px;
@@ -32,7 +31,6 @@ nav a {
 nav a:hover {
     background-color: #1b5e20;
 }
-
 
 form {
     background-color: #fff;
@@ -71,6 +69,19 @@ button:hover {
     background-color: #1b5e20;
 }
 
+[x-cloak] {
+    display: none !important;
+}
+
+.error {
+    color: #b71c1c;
+    margin: 4px 0 0;
+    font-size: 0.9em;
+}
+
+.campo-error {
+    border-color: #b71c1c;
+}
 
 table {
     width: 100%;
@@ -90,7 +101,6 @@ th {
     color: #fff;
 }
 
-
 section {
     background-color: #fff;
     padding: 15px;
@@ -100,18 +110,6 @@ section {
 
 ul {
     padding-left: 20px;
-}
-
-[x-cloak] { display: none !important; }
-
-.error {
-    color: #b71c1c;
-    margin: 4px 0 0;
-    font-size: 0.9em;
-}
-
-.campo-error {
-    border-color: #b71c1c;
 }
 
 @media (max-width: 600px) {
@@ -124,4 +122,37 @@ ul {
     form, table {
         max-width: 100%;
     }
+}
+
+.tabla-scroll {
+    overflow-x: auto;
+}
+
+.ordenable {
+    cursor: pointer;
+    user-select: none;
+}
+
+.btn-editar {
+    display: inline-block;
+    padding: 6px 10px;
+    background-color: #fff;
+    color: #2e7d32;
+    border: 1px solid #2e7d32;
+    border-radius: 4px;
+    text-decoration: none;
+    margin-right: 6px;
+}
+
+.btn-editar:hover {
+    background-color: #e8f5e9;
+}
+
+.btn-peligro {
+    background-color: #b71c1c;
+    margin-top: 0;
+}
+
+.btn-peligro:hover {
+    background-color: #7f0000;
 }
