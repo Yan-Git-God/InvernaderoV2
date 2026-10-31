@@ -102,6 +102,17 @@ ul {
     padding-left: 20px;
 }
 
+[x-cloak] { display: none !important; }
+
+.error {
+    color: #b71c1c;
+    margin: 4px 0 0;
+    font-size: 0.9em;
+}
+
+.campo-error {
+    border-color: #b71c1c;
+}
 
 @media (max-width: 600px) {
     nav a {
