@@ -8,6 +8,7 @@
     <script src="../js/datos.js"></script>
     <script src="../js/sesion.js"></script>
     <script>exigirRol("admin")</script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.8/dist/cdn.min.js"></script>
 </head>
 <body>
 
@@ -20,32 +21,177 @@
         <a href="../index.html" onclick="cerrarSesion()">Cerrar sesión</a>
     </nav>
 
-    <table border="1">
-        <tr>
-            <th>Nombre</th>
-            <th>Cultivos</th>
-            <th>Sensores</th>
-            <th>Acción</th>
-        </tr>
-        <tr>
-            <td>Juan Pérez</td>
-            <td>2</td>
-            <td>1</td>
-            <td><button onclick="return confirm('¿Eliminar a este usuario y todos sus registros?')">Eliminar</button></td>
-        </tr>
-        <tr>
-            <td>María López</td>
-            <td>1</td>
-            <td>2</td>
-            <td><button onclick="return confirm('¿Eliminar a este usuario y todos sus registros?')">Eliminar</button></td>
-        </tr>
-        <tr>
-            <td>Pedro Gómez</td>
-            <td>2</td>
-            <td>0</td>
-            <td><button onclick="return confirm('¿Eliminar a este usuario y todos sus registros?')">Eliminar</button></td>
-        </tr>
-    </table>
- 
+    <main x-data="usuariosAdmin()">
+
+        <form @submit.prevent="crear()" novalidate>
+            <h2>Crear usuario</h2>
+
+            <label for="nombreNuevo">Nombre completo:</label>
+            <input type="text" id="nombreNuevo" maxlength="60" x-model="nuevo.nombre" :class="{ 'campo-error': errores.nombre }">
+            <p class="error" x-cloak x-show="errores.nombre" x-text="errores.nombre"></p>
+
+            <label for="usuarioNuevo">Nombre de usuario:</label>
+            <input type="text" id="usuarioNuevo" maxlength="20" x-model="nuevo.usuario" :class="{ 'campo-error': errores.usuario }">
+            <p class="error" x-cloak x-show="errores.usuario" x-text="errores.usuario"></p>
+
+            <label for="passwordNuevo">Contraseña:</label>
+            <input type="password" id="passwordNuevo" maxlength="30" x-model="nuevo.password" :class="{ 'campo-error': errores.password }">
+            <p class="error" x-cloak x-show="errores.password" x-text="errores.password"></p>
+
+            <button type="submit">Crear usuario</button>
+        </form>
+
+        <p class="exito" x-cloak x-show="mensaje" x-text="mensaje"></p>
+
+        <section>
+            <h2>Usuarios registrados</h2>
+
+            <label for="busqueda">Buscar por nombre o usuario:</label>
+            <input type="text" id="busqueda" x-model="busqueda">
+
+            <p x-cloak x-show="usuariosFiltrados.length === 0">No hay usuarios que coincidan.</p>
+
+            <div class="tabla-scroll" x-show="usuariosFiltrados.length > 0">
+                <table>
+                    <thead>
+                        <tr>
+                            <th class="ordenable" @click="ordenarPor('nombre')">Nombre <span x-text="flecha('nombre')"></span></th>
+                            <th class="ordenable" @click="ordenarPor('usuario')">Usuario <span x-text="flecha('usuario')"></span></th>
+                            <th class="ordenable" @click="ordenarPor('cultivos')">Cultivos <span x-text="flecha('cultivos')"></span></th>
+                            <th class="ordenable" @click="ordenarPor('sensores')">Sensores <span x-text="flecha('sensores')"></span></th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <template x-for="u in usuariosFiltrados" :key="u.id">
+                            <tr>
+                                <td x-text="u.nombre"></td>
+                                <td x-text="u.usuario"></td>
+                                <td x-text="u.cultivos.length"></td>
+                                <td x-text="u.sensores.length"></td>
+                                <td>
+                                    <a class="btn-editar" :href="'invernaderos.html?usuario=' + u.id">Ver invernadero</a>
+                                    <button type="button" class="btn-peligro" @click="eliminar(u)">Eliminar</button>
+                                </td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        function usuariosAdmin() {
+            return {
+                datos: { usuarios: [] },
+                busqueda: "",
+                orden: "nombre",
+                direccion: "asc",
+                nuevo: { nombre: "", usuario: "", password: "" },
+                errores: {},
+                mensaje: "",
+
+                init() {
+                    this.datos = cargarDatos();
+                },
+
+                get usuariosFiltrados() {
+                    const texto = this.busqueda.trim().toLowerCase();
+                    const factor = this.direccion === "asc" ? 1 : -1;
+                    return this.datos.usuarios
+                        .filter((u) => u.rol === "usuario")
+                        .filter((u) => texto === "" || u.nombre.toLowerCase().includes(texto) || u.usuario.includes(texto))
+                        .sort((a, b) => {
+                            if (this.orden === "cultivos" || this.orden === "sensores") {
+                                return (a[this.orden].length - b[this.orden].length) * factor;
+                            }
+                            return String(a[this.orden]).localeCompare(String(b[this.orden]), "es") * factor;
+                        });
+                },
+
+                ordenarPor(campo) {
+                    if (this.orden === campo) {
+                        this.direccion = this.direccion === "asc" ? "desc" : "asc";
+                    } else {
+                        this.orden = campo;
+                        this.direccion = "asc";
+                    }
+                },
+
+                flecha(campo) {
+                    if (this.orden !== campo) {
+                        return "";
+                    }
+                    return this.direccion === "asc" ? "▲" : "▼";
+                },
+
+                validar() {
+                    const errores = {};
+                    const nombre = this.nuevo.nombre.trim();
+                    const usuario = this.nuevo.usuario.trim().toLowerCase();
+                    const password = this.nuevo.password;
+
+                    if (nombre === "") {
+                        errores.nombre = "Ingresa el nombre completo.";
+                    }
+
+                    if (usuario === "") {
+                        errores.usuario = "Ingresa el nombre de usuario.";
+                    } else if (usuario.length < 3) {
+                        errores.usuario = "El usuario debe tener al menos 3 caracteres.";
+                    } else if (!/^[a-z0-9_]+$/.test(usuario)) {
+                        errores.usuario = "Usa solo letras, números o guion bajo.";
+                    } else if (this.datos.usuarios.some((u) => u.usuario === usuario)) {
+                        errores.usuario = "Ese nombre de usuario ya existe.";
+                    }
+
+                    if (password === "") {
+                        errores.password = "Ingresa una contraseña.";
+                    } else if (password.length < 6) {
+                        errores.password = "La contraseña debe tener al menos 6 caracteres.";
+                    }
+
+                    return errores;
+                },
+
+                crear() {
+                    this.mensaje = "";
+                    this.errores = this.validar();
+                    if (Object.keys(this.errores).length > 0) {
+                        return;
+                    }
+
+                    const usuario = this.nuevo.usuario.trim().toLowerCase();
+                    this.datos.usuarios.push({
+                        id: siguienteId(this.datos.usuarios),
+                        usuario: usuario,
+                        password: this.nuevo.password,
+                        nombre: this.nuevo.nombre.trim(),
+                        rol: "usuario",
+                        cultivos: [],
+                        sensores: [],
+                        lecturas: []
+                    });
+                    guardarDatos(this.datos);
+
+                    this.mensaje = "Usuario " + usuario + " creado con su invernadero vacío.";
+                    this.nuevo = { nombre: "", usuario: "", password: "" };
+                },
+
+                eliminar(usuario) {
+                    const texto = "¿Eliminar a " + usuario.nombre + " y todos sus cultivos, sensores y datos registrados?";
+                    if (!confirm(texto)) {
+                        return;
+                    }
+                    this.datos.usuarios = this.datos.usuarios.filter((u) => u.id !== usuario.id);
+                    guardarDatos(this.datos);
+                    this.mensaje = "Se eliminó a " + usuario.nombre + " y todos sus registros.";
+                }
+            };
+        }
+    </script>
+
 </body>
 </html>
