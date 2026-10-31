@@ -8,7 +8,8 @@
     <script src="../js/datos.js"></script>
     <script src="../js/sesion.js"></script>
     <script>exigirRol("usuario")</script>
-</head> 
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.8/dist/cdn.min.js"></script>
+</head>
 <body>
 
     <h1>Inicio</h1>
@@ -21,12 +22,88 @@
         <a href="../index.html" onclick="cerrarSesion()">Cerrar sesión</a>
     </nav>
 
-    <section>
-        <h2>Resumen</h2>
-        <p>Cultivos registrados: 5</p>
-        <p>Sensores registrados: 3</p>
-        <p>Promedio de temperatura: 22°C</p>
-    </section>
+    <main x-data="inicio()">
+
+        <p>Hola, <span x-text="usuario.nombre"></span></p>
+
+        <section>
+            <h2>Resumen</h2>
+            <p>Cultivos registrados: <span x-text="usuario.cultivos.length"></span></p>
+            <p>Sensores registrados: <span x-text="usuario.sensores.length"></span></p>
+            <p>Datos recolectados: <span x-text="usuario.lecturas.length"></span></p>
+        </section>
+
+        <section>
+            <h2>Métricas de sensores</h2>
+
+            <p x-cloak x-show="metricas.length === 0">Aún no tienes sensores registrados.</p>
+
+            <div class="tabla-scroll" x-cloak x-show="metricas.length > 0">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Sensor</th>
+                            <th>Último valor</th>
+                            <th>Promedio</th>
+                            <th>Mínimo</th>
+                            <th>Máximo</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <template x-for="m in metricas" :key="m.nombre">
+                            <tr>
+                                <td x-text="m.nombre"></td>
+                                <td x-text="m.ultimo"></td>
+                                <td x-text="m.promedio"></td>
+                                <td x-text="m.minimo"></td>
+                                <td x-text="m.maximo"></td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        function inicio() {
+            return {
+                usuario: { nombre: "", cultivos: [], sensores: [], lecturas: [] },
+
+                init() {
+                    const actual = usuarioActual();
+                    if (actual) {
+                        this.usuario = actual;
+                    }
+                },
+
+                get metricas() {
+                    return this.usuario.sensores.map((sensor) => {
+                        const lecturas = this.usuario.lecturas
+                            .filter((l) => l.sensor === sensor.nombre)
+                            .sort((a, b) => a.fecha.localeCompare(b.fecha));
+
+                        if (lecturas.length === 0) {
+                            return { nombre: sensor.nombre, ultimo: "-", promedio: "-", minimo: "-", maximo: "-" };
+                        }
+
+                        const valores = lecturas.map((l) => l.valor);
+                        const suma = valores.reduce((a, b) => a + b, 0);
+                        const promedio = (suma / valores.length).toFixed(1);
+
+                        return {
+                            nombre: sensor.nombre,
+                            ultimo: valores[valores.length - 1] + " " + sensor.unidad,
+                            promedio: promedio + " " + sensor.unidad,
+                            minimo: Math.min(...valores) + " " + sensor.unidad,
+                            maximo: Math.max(...valores) + " " + sensor.unidad
+                        };
+                    });
+                }
+            };
+        }
+    </script>
 
 </body>
 </html>
