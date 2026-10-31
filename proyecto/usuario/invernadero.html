@@ -8,7 +8,8 @@
     <script src="../js/datos.js"></script>
     <script src="../js/sesion.js"></script>
     <script>exigirRol("usuario")</script>
-</head> 
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.8/dist/cdn.min.js"></script>
+</head>
 <body>
 
     <h1>Mi Invernadero</h1>
@@ -21,23 +22,166 @@
         <a href="../index.html" onclick="cerrarSesion()">Cerrar sesión</a>
     </nav>
 
-    <section>
-        <h2>Cultivos</h2>
-        <ul>
-            <li>Tomate - Alimentario - 01/03/2026 - Estacional</li>
-            <li>Rosa - Flor - 15/04/2026 - No estacional</li>
-            <li>Lechuga - Alimentario - 20/05/2026 - Estacional</li>
-        </ul>
-    </section>
+    <main x-data="invernadero()">
 
-    <section>
-        <h2>Sensores</h2>
-        <ul>
-            <li>Sensor Temperatura 1 - Temperatura - °C</li>
-            <li>Sensor Humedad 1 - Humedad - %</li>
-            <li>Sensor Riego 1 - Volumen de agua - m³</li>
-        </ul>
-    </section>
+        <section>
+            <h2>Cultivos</h2>
+
+            <p x-cloak x-show="usuario.cultivos.length === 0">
+                Aún no tienes cultivos registrados. <a href="creacion.html">Agrega el primero</a>.
+            </p>
+
+            <div x-cloak x-show="usuario.cultivos.length > 0">
+                <label for="filtroTipo">Filtrar por tipo:</label>
+                <select id="filtroTipo" x-model="filtroTipo">
+                    <option value="">Todos</option>
+                    <template x-for="t in tipos" :key="t">
+                        <option :value="t" x-text="t"></option>
+                    </template>
+                </select>
+
+                <p x-cloak x-show="cultivosFiltrados.length === 0">No hay cultivos de ese tipo.</p>
+
+                <div class="tabla-scroll" x-show="cultivosFiltrados.length > 0">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th class="ordenable" @click="ordenarPor('nombre')">Nombre <span x-text="flecha('nombre')"></span></th>
+                                <th class="ordenable" @click="ordenarPor('tipo')">Tipo <span x-text="flecha('tipo')"></span></th>
+                                <th class="ordenable" @click="ordenarPor('fecha')">Fecha de cultivo <span x-text="flecha('fecha')"></span></th>
+                                <th class="ordenable" @click="ordenarPor('estacional')">Estacional <span x-text="flecha('estacional')"></span></th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <template x-for="c in cultivosFiltrados" :key="c.id">
+                                <tr>
+                                    <td x-text="c.nombre"></td>
+                                    <td x-text="c.tipo"></td>
+                                    <td x-text="formatoFecha(c.fecha)"></td>
+                                    <td x-text="c.estacional ? 'Sí' : 'No'"></td>
+                                    <td>
+                                        <a class="btn-editar" :href="'creacion.html?editar=cultivo&id=' + c.id">Editar</a>
+                                        <button type="button" class="btn-peligro" @click="eliminarCultivo(c)">Eliminar</button>
+                                    </td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <h2>Sensores</h2>
+
+            <p x-cloak x-show="usuario.sensores.length === 0">
+                Aún no tienes sensores registrados. <a href="creacion.html">Agrega el primero</a>.
+            </p>
+
+            <div class="tabla-scroll" x-cloak x-show="usuario.sensores.length > 0">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Nombre</th>
+                            <th>Descripción</th>
+                            <th>Unidad</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <template x-for="s in usuario.sensores" :key="s.id">
+                            <tr>
+                                <td x-text="s.nombre"></td>
+                                <td x-text="s.descripcion"></td>
+                                <td x-text="s.unidad"></td>
+                                <td>
+                                    <a class="btn-editar" :href="'creacion.html?editar=sensor&id=' + s.id">Editar</a>
+                                    <button type="button" class="btn-peligro" @click="eliminarSensor(s)">Eliminar</button>
+                                </td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        function invernadero() {
+            return {
+                datos: null,
+                usuario: { cultivos: [], sensores: [], lecturas: [] },
+                filtroTipo: "",
+                orden: "fecha",
+                direccion: "desc",
+
+                init() {
+                    const actual = usuarioActual();
+                    if (!actual) {
+                        return;
+                    }
+                    this.datos = cargarDatos();
+                    this.usuario = this.datos.usuarios.find((u) => u.id === actual.id);
+                },
+
+                get tipos() {
+                    return [...new Set(this.usuario.cultivos.map((c) => c.tipo))];
+                },
+
+                get cultivosFiltrados() {
+                    const factor = this.direccion === "asc" ? 1 : -1;
+                    return this.usuario.cultivos
+                        .filter((c) => this.filtroTipo === "" || c.tipo === this.filtroTipo)
+                        .sort((a, b) => {
+                            if (this.orden === "estacional") {
+                                return (Number(a.estacional) - Number(b.estacional)) * factor;
+                            }
+                            return String(a[this.orden]).localeCompare(String(b[this.orden]), "es") * factor;
+                        });
+                },
+
+                ordenarPor(campo) {
+                    if (this.orden === campo) {
+                        this.direccion = this.direccion === "asc" ? "desc" : "asc";
+                    } else {
+                        this.orden = campo;
+                        this.direccion = "asc";
+                    }
+                },
+
+                flecha(campo) {
+                    if (this.orden !== campo) {
+                        return "";
+                    }
+                    return this.direccion === "asc" ? "▲" : "▼";
+                },
+
+                formatoFecha(fecha) {
+                    const partes = fecha.split("-");
+                    return partes[2] + "/" + partes[1] + "/" + partes[0];
+                },
+
+                eliminarCultivo(cultivo) {
+                    if (!confirm("¿Eliminar el cultivo " + cultivo.nombre + "?")) {
+                        return;
+                    }
+                    this.usuario.cultivos = this.usuario.cultivos.filter((c) => c.id !== cultivo.id);
+                    guardarDatos(this.datos);
+                },
+
+                eliminarSensor(sensor) {
+                    if (!confirm("¿Eliminar el sensor " + sensor.nombre + " y todos sus datos registrados?")) {
+                        return;
+                    }
+                    this.usuario.sensores = this.usuario.sensores.filter((s) => s.id !== sensor.id);
+                    this.usuario.lecturas = this.usuario.lecturas.filter((l) => l.sensor !== sensor.nombre);
+                    guardarDatos(this.datos);
+                }
+            };
+        }
+    </script>
 
 </body>
 </html>
