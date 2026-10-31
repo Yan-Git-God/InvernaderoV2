@@ -8,6 +8,8 @@
     <script src="../js/datos.js"></script>
     <script src="../js/sesion.js"></script>
     <script>exigirRol("usuario")</script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.8/dist/cdn.min.js"></script>
 </head>
 <body>
 
@@ -19,37 +21,136 @@
         <a href="creacion.html">Agregar</a>
         <a href="datos.html">Datos</a>
         <a href="../index.html" onclick="cerrarSesion()">Cerrar sesión</a>
-    </nav> 
+    </nav>
 
-    <label for="selectorSensor">Selecciona un sensor:</label>
-    <select id="selectorSensor">
-        <option value="temperatura">Sensor Temperatura 1</option>
-        <option value="humedad">Sensor Humedad 1</option>
-        <option value="riego">Sensor Riego 1</option>
-    </select>
+    <main x-data="datosSensor()">
 
-    <table border="1">
-        <tr>
-            <th>Fecha</th>
-            <th>Valor captado</th>
-        </tr>
-        <tr>
-            <td>01/09/2026</td>
-            <td>18°C</td>
-        </tr>
-        <tr>
-            <td>02/09/2026</td>
-            <td>20°C</td>
-        </tr>
-        <tr>
-            <td>03/09/2026</td>
-            <td>22°C</td>
-        </tr>
-        <tr>
-            <td>04/09/2026</td>
-            <td>21°C</td>
-        </tr>
-    </table>
+        <p x-cloak x-show="usuario.sensores.length === 0">
+            Aún no tienes sensores registrados. <a href="creacion.html">Agrega el primero</a>.
+        </p>
+
+        <div x-cloak x-show="usuario.sensores.length > 0">
+
+            <label for="selectorSensor">Selecciona un sensor:</label>
+            <select id="selectorSensor" x-model="sensorSeleccionado">
+                <template x-for="s in usuario.sensores" :key="s.id">
+                    <option :value="s.nombre" x-text="s.nombre"></option>
+                </template>
+            </select>
+
+            <p x-text="sensor ? 'Descripción: ' + sensor.descripcion + ' (' + sensor.unidad + ')' : ''"></p>
+
+            <p x-cloak x-show="lecturasSensor.length === 0">Este sensor aún no tiene datos registrados.</p>
+
+            <div class="grafico" x-cloak x-show="lecturasSensor.length > 0">
+                <canvas x-ref="lienzo"></canvas>
+            </div>
+
+            <section x-cloak x-show="lecturasSensor.length > 0">
+                <h2>Datos registrados</h2>
+                <div class="tabla-scroll">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Valor captado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <template x-for="(l, i) in lecturasTabla" :key="i">
+                                <tr>
+                                    <td x-text="formatoFecha(l.fecha)"></td>
+                                    <td x-text="l.valor + ' ' + (sensor ? sensor.unidad : '')"></td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+        </div>
+
+    </main>
+
+    <script>
+        function datosSensor() {
+            let grafico = null;
+
+            return {
+                usuario: { sensores: [], lecturas: [] },
+                sensorSeleccionado: "",
+
+                init() {
+                    const actual = usuarioActual();
+                    if (!actual) {
+                        return;
+                    }
+                    this.usuario = actual;
+                    if (this.usuario.sensores.length > 0) {
+                        this.sensorSeleccionado = this.usuario.sensores[0].nombre;
+                    }
+                    this.$watch("sensorSeleccionado", () => this.dibujar());
+                    this.dibujar();
+                },
+
+                get sensor() {
+                    return this.usuario.sensores.find((s) => s.nombre === this.sensorSeleccionado) || null;
+                },
+
+                get lecturasSensor() {
+                    return this.usuario.lecturas
+                        .filter((l) => l.sensor === this.sensorSeleccionado)
+                        .sort((a, b) => a.fecha.localeCompare(b.fecha));
+                },
+
+                get lecturasTabla() {
+                    return [...this.lecturasSensor].reverse();
+                },
+
+                formatoFecha(fecha) {
+                    const partes = fecha.split("-");
+                    return partes[2] + "/" + partes[1] + "/" + partes[0];
+                },
+
+                dibujar() {
+                    this.$nextTick(() => {
+                        if (grafico) {
+                            grafico.destroy();
+                            grafico = null;
+                        }
+                        const sensor = this.sensor;
+                        const lecturas = this.lecturasSensor;
+                        if (!sensor || lecturas.length === 0) {
+                            return;
+                        }
+
+                        grafico = new Chart(this.$refs.lienzo, {
+                            type: "line",
+                            data: {
+                                labels: lecturas.map((l) => this.formatoFecha(l.fecha)),
+                                datasets: [{
+                                    label: sensor.nombre + " (" + sensor.unidad + ")",
+                                    data: lecturas.map((l) => l.valor),
+                                    borderColor: "#2e7d32",
+                                    backgroundColor: "rgba(46, 125, 50, 0.15)",
+                                    fill: true,
+                                    tension: 0.3
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                scales: {
+                                    x: { title: { display: true, text: "Fecha" } },
+                                    y: { title: { display: true, text: sensor.unidad } }
+                                }
+                            }
+                        });
+                    });
+                }
+            };
+        }
+    </script>
 
 </body>
 </html>
