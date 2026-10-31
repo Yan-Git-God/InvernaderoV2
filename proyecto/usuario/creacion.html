@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
-<head> 
+<head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Invernadero - Agregar</title>
@@ -8,10 +8,11 @@
     <script src="../js/datos.js"></script>
     <script src="../js/sesion.js"></script>
     <script>exigirRol("usuario")</script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.8/dist/cdn.min.js"></script>
 </head>
 <body>
 
-    <h1>Agregar</h1>
+    <h1>Agregar o editar</h1>
 
     <nav>
         <a href="inicio.html">Inicio</a>
@@ -21,40 +22,217 @@
         <a href="../index.html" onclick="cerrarSesion()">Cerrar sesión</a>
     </nav>
 
-    <form>
+    <main x-data="creacion()">
 
-        <h2>Agregar Cultivo</h2>
-        <label for="nombreCultivo">Nombre:</label>
-        <input type="text" id="nombreCultivo" required>
+        <p class="error" x-cloak x-show="noEncontrado">
+            No se encontró lo que querías editar. Puedes crear uno nuevo.
+        </p>
 
-        <label for="tipoCultivo">Tipo:</label>
-        <input type="text" id="tipoCultivo" required>
+        <form @submit.prevent="guardar()" novalidate>
 
-        <label for="fechaCultivo">Fecha de cultivo:</label>
-        <input type="date" id="fechaCultivo" required>
+            <h2 x-text="titulo"></h2>
 
-        <label for="estacional">¿Es estacional?</label>
-        <input type="checkbox" id="estacional">
+            <div x-show="!editando">
+                <label for="entidad">¿Qué quieres agregar?</label>
+                <select id="entidad" x-model="entidad" @change="errores = {}">
+                    <option value="cultivo">Cultivo</option>
+                    <option value="sensor">Sensor</option>
+                </select>
+            </div>
 
-        <button type="submit">Guardar Cultivo</button>
+            <div x-show="entidad === 'cultivo'">
+                <label for="nombreCultivo">Nombre:</label>
+                <input type="text" id="nombreCultivo" maxlength="50" x-model="cultivo.nombre" :class="{ 'campo-error': errores.nombre }">
+                <p class="error" x-cloak x-show="errores.nombre" x-text="errores.nombre"></p>
 
-    </form>
+                <label for="tipoCultivo">Tipo:</label>
+                <select id="tipoCultivo" x-model="cultivo.tipo" :class="{ 'campo-error': errores.tipo }">
+                    <option value="">Selecciona un tipo</option>
+                    <template x-for="t in tiposCultivo" :key="t">
+                        <option :value="t" x-text="t"></option>
+                    </template>
+                </select>
+                <p class="error" x-cloak x-show="errores.tipo" x-text="errores.tipo"></p>
 
-    <form>
+                <label for="fechaCultivo">Fecha de cultivo:</label>
+                <input type="date" id="fechaCultivo" x-model="cultivo.fecha" :class="{ 'campo-error': errores.fecha }">
+                <p class="error" x-cloak x-show="errores.fecha" x-text="errores.fecha"></p>
 
-        <h2>Agregar Sensor</h2>
-        <label for="nombreSensor">Nombre:</label>
-        <input type="text" id="nombreSensor" required>
+                <label>
+                    <input type="checkbox" x-model="cultivo.estacional">
+                    Es estacional
+                </label>
+            </div>
 
-        <label for="descripcionSensor">Descripción:</label>
-        <input type="text" id="descripcionSensor" required>
+            <div x-show="entidad === 'sensor'">
+                <label for="nombreSensor">Nombre:</label>
+                <input type="text" id="nombreSensor" maxlength="50" x-model="sensor.nombre" :class="{ 'campo-error': errores.nombre }">
+                <p class="error" x-cloak x-show="errores.nombre" x-text="errores.nombre"></p>
 
-        <label for="unidadSensor">Unidad:</label>
-        <input type="text" id="unidadSensor" required>
+                <label for="descripcionSensor">Descripción:</label>
+                <input type="text" id="descripcionSensor" maxlength="100" x-model="sensor.descripcion" :class="{ 'campo-error': errores.descripcion }">
+                <p class="error" x-cloak x-show="errores.descripcion" x-text="errores.descripcion"></p>
 
-        <button type="submit">Guardar Sensor</button>
+                <label for="unidadSensor">Unidad:</label>
+                <input type="text" id="unidadSensor" maxlength="20" x-model="sensor.unidad" :class="{ 'campo-error': errores.unidad }">
+                <p class="error" x-cloak x-show="errores.unidad" x-text="errores.unidad"></p>
+            </div>
 
-    </form>
+            <button type="submit" x-text="editando ? 'Guardar cambios' : 'Guardar'"></button>
+            <a class="btn-editar" href="invernadero.html">Cancelar</a>
+
+        </form>
+
+    </main>
+
+    <script>
+        function creacion() {
+            return {
+                datos: null,
+                usuario: { cultivos: [], sensores: [], lecturas: [] },
+
+                entidad: "cultivo",
+                editando: false,
+                idEditado: null,
+                nombreOriginal: "",
+                noEncontrado: false,
+
+                tiposCultivo: ["Alimentario", "Flor", "Hierba", "Frutal", "Otro"],
+
+                cultivo: { nombre: "", tipo: "", fecha: "", estacional: false },
+                sensor: { nombre: "", descripcion: "", unidad: "" },
+
+                errores: {},
+
+                init() {
+                    const actual = usuarioActual();
+                    if (!actual) {
+                        return;
+                    }
+                    this.datos = cargarDatos();
+                    this.usuario = this.datos.usuarios.find((u) => u.id === actual.id);
+
+                    const params = new URLSearchParams(location.search);
+                    const tipo = params.get("editar");
+                    const id = Number(params.get("id"));
+
+                    if (tipo === "cultivo" || tipo === "sensor") {
+                        this.entidad = tipo;
+                        const lista = tipo === "cultivo" ? this.usuario.cultivos : this.usuario.sensores;
+                        const existente = lista.find((e) => e.id === id);
+
+                        if (!existente) {
+                            this.noEncontrado = true;
+                            return;
+                        }
+
+                        this.editando = true;
+                        this.idEditado = id;
+                        if (tipo === "cultivo") {
+                            this.cultivo = { ...existente };
+                        } else {
+                            this.sensor = { ...existente };
+                            this.nombreOriginal = existente.nombre;
+                        }
+                    }
+                },
+
+                get titulo() {
+                    const accion = this.editando ? "Editar" : "Agregar";
+                    return accion + " " + this.entidad;
+                },
+
+                validarCultivo() {
+                    const errores = {};
+                    if (this.cultivo.nombre.trim() === "") {
+                        errores.nombre = "Ingresa el nombre del cultivo.";
+                    }
+                    if (this.cultivo.tipo === "") {
+                        errores.tipo = "Selecciona el tipo de cultivo.";
+                    }
+                    if (this.cultivo.fecha === "") {
+                        errores.fecha = "Selecciona la fecha de cultivo.";
+                    }
+                    return errores;
+                },
+
+                validarSensor() {
+                    const errores = {};
+                    const nombre = this.sensor.nombre.trim();
+
+                    if (nombre === "") {
+                        errores.nombre = "Ingresa el nombre del sensor.";
+                    } else {
+                        const repetido = this.datos.usuarios.some((u) =>
+                            u.sensores.some((s) =>
+                                s.nombre.toLowerCase() === nombre.toLowerCase() &&
+                                !(this.editando && u.id === this.usuario.id && s.id === this.idEditado)
+                            )
+                        );
+                        if (repetido) {
+                            errores.nombre = "Ya existe un sensor con ese nombre.";
+                        }
+                    }
+                    if (this.sensor.descripcion.trim() === "") {
+                        errores.descripcion = "Ingresa una descripción.";
+                    }
+                    if (this.sensor.unidad.trim() === "") {
+                        errores.unidad = "Ingresa la unidad que mide el sensor.";
+                    }
+                    return errores;
+                },
+
+                guardar() {
+                    this.errores = this.entidad === "cultivo" ? this.validarCultivo() : this.validarSensor();
+                    if (Object.keys(this.errores).length > 0) {
+                        return;
+                    }
+
+                    if (this.entidad === "cultivo") {
+                        this.guardarCultivo();
+                    } else {
+                        this.guardarSensor();
+                    }
+                    guardarDatos(this.datos);
+                    location.href = "invernadero.html";
+                },
+
+                guardarCultivo() {
+                    const campos = {
+                        nombre: this.cultivo.nombre.trim(),
+                        tipo: this.cultivo.tipo,
+                        fecha: this.cultivo.fecha,
+                        estacional: this.cultivo.estacional
+                    };
+                    if (this.editando) {
+                        const existente = this.usuario.cultivos.find((c) => c.id === this.idEditado);
+                        Object.assign(existente, campos);
+                    } else {
+                        this.usuario.cultivos.push({ id: siguienteId(this.usuario.cultivos), ...campos });
+                    }
+                },
+
+                guardarSensor() {
+                    const campos = {
+                        nombre: this.sensor.nombre.trim(),
+                        descripcion: this.sensor.descripcion.trim(),
+                        unidad: this.sensor.unidad.trim()
+                    };
+                    if (this.editando) {
+                        this.usuario.lecturas.forEach((l) => {
+                            if (l.sensor === this.nombreOriginal) {
+                                l.sensor = campos.nombre;
+                            }
+                        });
+                        const existente = this.usuario.sensores.find((s) => s.id === this.idEditado);
+                        Object.assign(existente, campos);
+                    } else {
+                        this.usuario.sensores.push({ id: siguienteId(this.usuario.sensores), ...campos });
+                    }
+                }
+            };
+        }
+    </script>
 
 </body>
 </html>
