@@ -3,6 +3,7 @@ const CACHE = "invernadero-v1";
 const ARCHIVOS = [
     "./",
     "./index.html",
+    "./registro.html",
     "./manifest.json",
     "./css/styles.css",
     "./js/datos.js",
